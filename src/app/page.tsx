@@ -63,9 +63,25 @@ const POPULAR_TIMEZONES = [
 ];
 
 export default function BookingPage() {
-  // State
-  const [selectedTimezone, setSelectedTimezone] = useState<string>("Asia/Kolkata");
-  const [selectedDate, setSelectedDate] = useState<string>("");
+  // State initialized lazily to avoid cascading renders
+  const [selectedTimezone, setSelectedTimezone] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        if (detected) return detected;
+      } catch {
+        // fallback
+      }
+    }
+    return "Asia/Kolkata";
+  });
+
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split("T")[0];
+  });
+
   const [slots, setSlots] = useState<SlotItem[]>([]);
   const [loadingSlots, setLoadingSlots] = useState<boolean>(false);
   const [selectedSlot, setSelectedSlot] = useState<SlotItem | null>(null);
@@ -81,20 +97,6 @@ export default function BookingPage() {
   const [notifications, setNotifications] = useState<OutboxNotification[]>([]);
   const [loadingNotifications, setLoadingNotifications] = useState(false);
 
-  // Initialize date to tomorrow
-  useEffect(() => {
-    try {
-      const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      if (detected) setSelectedTimezone(detected);
-    } catch {
-      // fallback
-    }
-
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const dateStr = tomorrow.toISOString().split("T")[0];
-    setSelectedDate(dateStr);
-  }, []);
 
   // Fetch available slots whenever date or timezone changes
   useEffect(() => {
@@ -221,9 +223,10 @@ export default function BookingPage() {
             {/* Header Hero */}
             <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 text-white rounded-2xl p-6 sm:p-8 shadow-sm">
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-                Schedule Your Child's 1-on-1 Trial Class
+                Schedule Your Child&apos;s 1-on-1 Trial Class
               </h1>
               <p className="mt-2 text-blue-100 max-w-2xl text-sm sm:text-base leading-relaxed">
+
                 Choose your local timezone and preferred time. Our system automatically matches an eligible mentor, guarantees collision-free scheduling, and generates a dedicated classroom link.
               </p>
             </div>

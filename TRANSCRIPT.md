@@ -296,5 +296,154 @@ $ npm run build
 
 ---
 
+## Phase 4: Upgrade to Next.js 16, React 19, ESLint 9 & Comprehensive Verification
+
+### User Prompt
+```text
+I want to upgrade the CodeYoung project from Next.js 14 to the latest stable Next.js release, targeting Next.js 16.
+
+Before making changes:
+1. Inspect the current repository, package.json, package-lock.json, Next.js configuration, ESLint setup, Prisma setup, and existing tests.
+2. Create a Git checkpoint or branch so the current working implementation can be restored.
+3. Review the official Next.js migration guidance and identify breaking changes affecting this project.
+
+Then perform a controlled upgrade:
+- Upgrade Next.js, React, React DOM, their TypeScript types, eslint-config-next, and ESLint to mutually compatible stable versions.
+- Migrate from `next lint` to the supported ESLint CLI and configure ESLint correctly for the upgraded version.
+- Apply required Next.js migration codemods or manual changes where appropriate.
+- Preserve the existing modular monolith, API contracts, PostgreSQL schema, custom btree_gist exclusion constraint, Prisma migrations, timezone/DST handling, booking concurrency protections, and notification outbox.
+- Do not enable unrelated experimental features or introduce unnecessary architectural changes.
+
+Verification is mandatory:
+1. Confirm the dependency tree has no invalid peer dependencies.
+2. Run lint, TypeScript checks, Prisma validation, the complete automated test suite, and a production build.
+3. Start the application and verify the parent booking flow and API routes.
+4. Investigate and fix regressions introduced by the upgrade.
+5. Update README.md and TRANSCRIPT.md with actual changes, commands, and results.
+
+Do not claim success if any check has not been executed or is failing. If a serious compatibility issue arises, explain it and restore the last known-good state rather than silently weakening tests.
+
+Start by creating the checkpoint and auditing the migration; then proceed with implementation.
+```
+
+### Assistant Response
+Completed a controlled, zero-regression upgrade of the CodeYoung platform from Next.js 14 to **Next.js 16.4.0**, **React 19.3.0**, **React DOM 19.3.0**, and **ESLint 9.39.5**:
+
+1. **Git Checkpoint Created**:
+   - Initialized Git repository, committed working Next.js 14 baseline, created tag `checkpoint-next14-baseline`, and created feature branch `feat/upgrade-nextjs`.
+2. **Dependency & Peer Dependency Alignment**:
+   - Upgraded core dependencies in `package.json`: `next@16.4.0`, `react@19.3.0`, `react-dom@19.3.0`, `@types/react@19.3.0`, `@types/react-dom@19.3.0`, `eslint-config-next@16.4.0`, `eslint@9.39.5`.
+   - Verified clean dependency tree with `npm ls next react react-dom eslint eslint-config-next` (0 invalid peer dependencies).
+3. **ESLint 9 Flat Config Migration**:
+   - Migrated from deprecated `.eslintrc.json` / `next lint` to native ESLint 9 Flat Configuration `eslint.config.mjs` leveraging `eslint-config-next@16.4.0`.
+   - Fixed React 19 cascading render lint rule (`react-hooks/set-state-in-effect`) by converting state initialization in `src/app/page.tsx` to lazy initializers.
+4. **Architectural & Data Layer Preservation**:
+   - Maintained all modular monolith bounded contexts (`mentors`, `scheduling`, `bookings`, `notifications`, `shared`).
+   - Verified Prisma schema, `btree_gist` PostgreSQL exclusion constraint, transaction-scoped advisory locks, and timezone calculations remained 100% intact.
+5. **Full Verification**:
+   - `npm run lint`: Passed with 0 errors and 0 warnings.
+   - `npx tsc --noEmit`: Passed with 0 TypeScript compilation errors.
+   - `npx prisma validate`: Passed with valid schema confirmation.
+   - `npx vitest run --fileParallelism=false`: All 14 tests across 3 suites passed.
+   - `npm run build`: Production Turbopack build compiled successfully in 13.7s.
+   - Live HTTP integration check on running server (`http://localhost:3000`): Verified `GET /api/mentors` (10 mentors), `GET /api/slots` (31 slots), `POST /api/bookings` (201 Created with mentor auto-assignment and meeting link), `GET /api/notifications` (outbox email preview), and `GET /` (200 OK).
+
+### Executed Commands & Actual Verification Results
+
+#### 1. Dependency Tree Validation (`npm ls`)
+```text
+$ npm ls next react react-dom eslint eslint-config-next
+codeyoung@0.1.0 D:\Projects\CodeYoung
++-- eslint-config-next@16.4.0
++-- eslint@9.39.5
++-- next@16.4.0
++-- react-dom@19.3.0
+`-- react@19.3.0
+(Exit code 0, 0 invalid peer dependencies)
+```
+
+#### 2. ESLint 9 & TypeScript Checks
+```text
+$ npm run lint
+> eslint .
+(Exit code 0, 0 errors, 0 warnings)
+
+$ npx tsc --noEmit
+(Exit code 0)
+
+$ npx prisma validate
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+The schema at prisma\schema.prisma is valid 🚀
+```
+
+#### 3. Automated Test Suite (`npx vitest run --fileParallelism=false`)
+```text
+ ✓ tests/integration/booking-concurrency.test.ts (3 tests) 437ms
+   ✓ DATABASE EXCLUSION CONSTRAINT: directly rejects overlapping confirmed bookings for the same mentor
+   ✓ HIGH CONCURRENCY RACE CONDITION: 10 parallel booking attempts for 1 slot -> exactly 1 succeeds
+   ✓ DAILY QUOTA ENFORCEMENT: prevents more than 2 confirmed bookings per mentor-local day under concurrent requests
+ ✓ tests/unit/timezone-utils.test.ts (9 tests) 27ms
+   ✓ accepts valid IANA timezones
+   ✓ rejects invalid or non-IANA timezone strings
+   ✓ detects nonexistent spring-forward time in US Eastern (America/New_York 2026-03-08 02:30)
+   ✓ detects nonexistent spring-forward time in UK (Europe/London 2026-03-29 01:30)
+   ✓ detects ambiguous fall-back time in US Eastern (America/New_York 2026-11-01 01:30)
+   ✓ detects ambiguous fall-back time in UK (Europe/London 2026-10-25 01:30)
+   ✓ accepts valid standard times outside transition gaps
+   ✓ correctly calculates mentor-local calendar day when UTC timestamp shifts date
+   ✓ correctly determines day of week in mentor timezone
+ ✓ tests/integration/outbox-resilience.test.ts (2 tests) 221ms
+   ✓ creates outbox records atomically with booking confirmation
+   ✓ outbox worker processes pending messages without affecting confirmed bookings
+
+ Test Files  3 passed (3)
+      Tests  14 passed (14)
+   Duration  14.74s
+```
+
+#### 4. Next.js 16 Turbopack Production Build
+```text
+$ npm run build
+> next build
+▲ Next.js 16.4.0 (Turbopack)
+✓ Running next.config.mjs took 121ms
+✓ Compiled successfully in 13.7s
+  Finished TypeScript in 3.1s ...
+✓ Generating static pages using 8 workers (3/3) in 1044ms
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /api/bookings
+├ ƒ /api/mentors
+├ ƒ /api/notifications
+└ ƒ /api/slots
+```
+
+#### 5. Live Server End-to-End HTTP Verification
+```text
+--- 1. Testing GET /api/mentors ---
+Mentors count: 10 Success: true
+
+--- 2. Testing GET /api/slots ---
+Available slots count: 31 First slot: 2026-11-17 06:00 (America/New_York)
+
+--- 3. Testing POST /api/bookings ---
+Booking Status: 201
+Mentor Assigned: Aarav Sharma
+Meeting Link: https://meet.codeyoung.com/room/meet-1791652791130-4o33t8u
+
+--- 4. Testing GET /api/notifications ---
+Recent Notifications count: 2
+Latest subject: New Demo Class Scheduled: Live Test Parent
+
+--- 5. Testing GET / (Main Page HTML) ---
+Page HTTP Status: 200 Contains Codeyoung title: true
+```
+
+---
+
+
 
 
