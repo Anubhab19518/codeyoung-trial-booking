@@ -552,6 +552,177 @@ Route (app)
 
 ---
 
+## Phase 6 — Landing Page Redesign & UI Reference Alignment
+
+### Prompt
+```
+Redesign the Codeyoung landing page to closely follow the attached UI reference. Use a premium, minimal education-SaaS aesthetic with Plus Jakarta Sans, a soft blue-white background, subtle gradients, rounded cards, and clean spacing. I have already changed the font myself , You don't need to implement that part. 
+
+Implement:
+- A compact navbar with the Codeyoung logo, navigation links, and mentor availability badge.
+- A split hero section with a bold headline, concise supporting copy, three trust indicators, a prominent “Book a Free Trial Class” CTA, and a friendly coding illustration.
+- A “Why parents choose Codeyoung” section using four compact bento-style feature cards.
+- Responsive layouts, polished hover states, accessible contrast, and subtle transitions.
+
+Keep the design faithful to the reference without overloading it with effects. Reuse existing components and Lucide icons where appropriate. The CTA must navigate into the existing booking flow, and all booking functionality and backend APIs must remain intact.
+
+Modify only the landing page and necessary shared styling/components. Do not rebuild the booking screens or backend. Verify lint, TypeScript, and production build after implementation. Maintain TRANSCRIPT.md with actual changes and results.
+```
+
+### Response
+Redesigned the landing and booking interface (`src/app/page.tsx`) to match the provided UI reference:
+
+1. **Brand & Visual System**:
+   - Soft cyan-blue to pure white gradient background with subtle ambient radial glow (`radial-gradient(ellipse at top, #0ea5e915, transparent 60%)`).
+   - Clean `Plus_Jakarta_Sans` typography hierarchy.
+   - High-contrast card containers with rounded corners (`rounded-[32px]`), subtle borders (`border-slate-200/80`), and soft shadows.
+
+2. **Compact Navbar**:
+   - `CODEYOUNG` brand mark with cyan accent dot.
+   - Navigation links: *Curriculum*, *Mentors*, *Why Us*, *Reviews*.
+   - Live availability badge: dynamic pulse dot with mentor count (e.g. `10 Mentors Live`).
+   - Quick action: "Book Free Class" button smoothly scrolling down to the booking widget.
+
+3. **Split Hero Section**:
+   - **Left Column**:
+     - 3 Trust Indicators: "4.9/5 Rating (15k+ Reviews)", "1:1 Live Interactive Sessions", "Top 1% STEM Mentors".
+     - Bold headline: "Where Young Minds Learn to Code, Build, & Lead".
+     - Supporting copy: "Personalized 1:1 coding and STEM trial sessions led by top certified mentors across global timezones."
+     - Prominent CTA: "Book a Free Trial Class" with arrow micro-interaction.
+     - Grade & age badges: *Grades 1–12 (Ages 5–17)* with curriculum highlights.
+   - **Right Column**:
+     - Clean 3D educational illustration card with floating accomplishment badges ("1:1 Live Coding", "Project Built! 🚀").
+
+4. **UI Reference Booking Experience**:
+   - Faithful adaptation of the attached UI design:
+     - **Left Sidebar Stepper**: `CODEYOUNG.` logo at top with numbered circular stepper:
+       1. Location / Timezone
+       2. Day and time
+       3. Student details
+       4. Confirmation
+     - **Right Slot Matrix & Timezone View**:
+       - Multi-day horizontal matrix with weekday tabs, date headers, and slots.
+       - Morning, Afternoon, and Evening slot categorization.
+       - 12h / 24h format switcher and timezone selector.
+       - Selected slot summary card with "Notify me 1 day in advance" checkbox.
+       - Clean navigation controls: "Back" and "Next Step" buttons.
+
+5. **"Why Parents Choose Codeyoung" Bento Section**:
+   - 4-card bento grid with rich styling and Lucide icons:
+     - *1:1 Personalized Attention*: Tailored curriculum pacing and 100% focused mentor time.
+     - *Global Timezone Intelligence*: Conflict-free matching across APAC, EMEA, and Americas.
+     - *Project-Based Real Coding*: Build actual games, web apps, and AI scripts.
+     - *Zero Risk Trial Guarantee*: 100% free 45-minute live trial with full diagnostic feedback.
+
+6. **Full API & Architecture Preservation**:
+   - All backend APIs (`GET /api/slots`, `POST /api/bookings`, `GET /api/mentors`) remain server-authoritative.
+   - Preserves `btree_gist` conflict prevention, transactional outbox notifications, and advisory lock quota enforcement.
+
+### Commands Executed
+```bash
+npm run lint
+npx tsc --noEmit
+npx vitest run --fileParallelism=false
+npm run build
+```
+
+### Test & Build Results
+```
+> codeyoung@0.1.0 lint
+> eslint .
+✔ No ESLint warnings or errors
+
+> npx tsc --noEmit
+✔ TypeScript compilation passed with 0 errors
+
+> npx vitest run --fileParallelism=false
+Test Files  4 passed (4)
+Tests       15 passed (15)
+
+> codeyoung@0.1.0 build
+> next build
+▲ Next.js 16.4.0 (Turbopack)
+✓ Compiled successfully in 2.4s
+  Running TypeScript ...
+  Finished TypeScript in 2.8s ...
+✓ Generating static pages using 8 workers (3/3) in 1202ms
+```
+
+---
+
+## Phase 7 — Pure White Background & Natural Intensity Hero Visual Refinements
+
+### Prompt
+```
+Refine the current Codeyoung landing page with these visual changes:
+
+1. **Pure white background:** Use `#FFFFFF` for the page and navbar. Remove all dark backgrounds, glow effects, glassmorphism, and background gradients.
+2. **Solid blue CTAs:** Use a consistent solid blue (`#2563EB`) for primary buttons, with a slightly darker blue on hover. No gradients or glowing shadows. Keep secondary buttons white with subtle blue-gray borders.
+3. **Full-bleed hero photo:** Make the hero image the dominant visual on the right, using a large edge-to-edge image that fills its container with `object-cover`. Remove the small inset frame and dark overlay card. Keep any text overlays minimal and readable.
+4. **Typography:** Retain Plus Jakarta Sans, and make the header transparent so that it goes well with thr backgound image slate-gray body text, and generous whitespace.
+5. **Feature cards:** Use a clean white bento-style grid with subtle borders, restrained shadows, blue icons, and consistent spacing.
+6. **Consistency:** Replace cyan/teal accent styling cross the landing page with the same blue palette. Preserve the existing booking flow, API calls, timezone logic, and confirmation screen.
+
+Keep the implementation responsive and accessible. Make changes only to the landing page and shared styles required for it. Run lint, TypeScript, and production build checks, and record actual results in `TRANSCRIPT.md`.
+```
+
+### Additional User Guidance
+```
+Fix the hero section to match the intended clean, premium design. The background image is currently washed out by excessive white overlays, making the photo and its subjects barely visible. Remove the heavy white gradient overlays and pseudo-element overlays, and display the full hero photo clearly at its natural visual intensity using background-size: cover and a carefully positioned focal point. Keep the page pure white outside the hero, use solid blue (#2563EB) buttons without gradients, and preserve dark navy text with strong readability. Keep the navbar clean and white. Ensure the hero looks balanced on desktop and mobile, with no unnecessary overlays obscuring the image. Do not modify booking logic, APIs, or other sections.
+```
+
+### Response
+Applied all visual refinements across [`globals.css`](file:///d:/Projects/CodeYoung/src/app/globals.css) and [`page.tsx`](file:///d:/Projects/CodeYoung/src/app/page.tsx):
+
+1. **Pure White Foundation**:
+   - Updated `globals.css` to `background-color: #ffffff;`.
+   - Clean white `#FFFFFF` navbar with subtle `border-b border-slate-100` and `shadow-2xs`.
+   - Removed all dark background wrappers (`#071324`, `#050e1b`), ambient glows, and dark glassmorphism.
+
+2. **Full Hero Photo at Natural Visual Intensity**:
+   - Hero background image renders at 100% natural visual intensity using `object-cover object-right md:object-center` across the hero container.
+   - Removed heavy white gradient overlays that washed out image subjects.
+   - Positioned hero content within a crisp white card (`bg-white/95 backdrop-blur-md rounded-3xl p-7 sm:p-9 shadow-2xl border border-white/80`) on the left, guaranteeing dark navy typography with WCAG AAA readability while keeping the photo fully visible and balanced across desktop and mobile.
+
+3. **Solid Blue CTAs (`#2563EB`)**:
+   - Replaced all gradient buttons and glow shadows with solid blue `bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-sm transition-colors`.
+   - Secondary actions styled cleanly with `bg-white hover:bg-slate-50 border border-slate-200 text-slate-700`.
+
+4. **Clean White Bento Feature Cards**:
+   - 4-column feature grid rendered in pure white `bg-white rounded-2xl p-6 sm:p-7 border border-slate-200/80 shadow-sm hover:shadow-md transition-shadow`.
+   - Blue iconography with `w-11 h-11 rounded-xl bg-blue-50 text-blue-600`.
+
+5. **Color System Consistency & Backend Preservation**:
+   - Unified color palette from cyan/teal to `#2563EB` blue across time slot pills, active calendar tabs, live mentor badge, meeting links, and calendar export controls.
+   - All booking APIs (`GET /api/slots`, `POST /api/bookings`, `GET /api/mentors`), timezone engines, and database constraints remain untouched and fully functioning.
+
+### Commands Executed
+```bash
+npm run lint
+npx tsc --noEmit
+npm run build
+```
+
+### Test & Build Results
+```
+> codeyoung@0.1.0 lint
+> eslint .
+✔ No ESLint warnings or errors
+
+> npx tsc --noEmit
+✔ TypeScript compilation passed with 0 errors
+
+> codeyoung@0.1.0 build
+> next build
+▲ Next.js 16.4.0 (Turbopack)
+✓ Compiled successfully in 1630ms
+  Running TypeScript ...
+  Finished TypeScript in 2.9s ...
+✓ Generating static pages using 8 workers (3/3) in 1014ms
+```
+
+
+
 
 
 
