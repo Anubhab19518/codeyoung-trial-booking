@@ -444,6 +444,115 @@ Page HTTP Status: 200 Contains Codeyoung title: true
 
 ---
 
+## Phase 5: Parent-Facing Booking Journey Audit, Enhancements & Verification
+
+### User Prompt
+```text
+Audit the existing CodeYoung application and focus on completing the parent-facing trial-class booking experience.
+
+Before modifying anything, inspect the current UI, API integration, validation, loading states, error handling, and responsive behavior. Reuse the existing implementation wherever possible.
+
+Requirements:
+1. Deliver a polished, responsive booking journey: timezone selection, date selection, available time slots, parent/student details, booking submission, and confirmation.
+2. Display the assigned mentor, correctly localized booking date/time, timezone, and dummy meeting link after successful booking.
+3. Handle loading, validation errors, expired/unavailable slots, network errors, and no availability gracefully.
+4. Prevent duplicate submissions and never show confirmation unless the server confirms the booking.
+5. Ensure the UI consumes the existing server-authoritative APIs. Do not trust client-provided mentor assignments or availability.
+6. Preserve Next.js 16, React 19, the modular monolith, PostgreSQL/Prisma, database constraints, advisory-lock quota protection, DST handling, and notification outbox.
+7. Add or update tests for important booking-flow behaviors. Run lint, TypeScript checks, automated tests, and production build after changes.
+8. Maintain TRANSCRIPT.md with actual prompts, actions, commands, and results.
+
+Do not rebuild working backend modules or add an unnecessary admin dashboard. First report the frontend gaps you actually find, then implement the highest-priority fixes and verify them.
+
+You are allowed to proceed with the Mono Repo setup. Use the tech stack as mentioned before (Next Js and Tailwind). Come up with a plan , ensure the User Experience is not hampered.
+```
+
+### Assistant Response
+Audited the frontend booking journey, identified key usability gaps, and completed high-priority enhancements:
+
+1. **Frontend Audit & Gaps Identified**:
+   - Timezone selector was limited to 4 hardcoded buttons without global search.
+   - Form only captured parent details, missing Student Name, Grade Level (Grades 1–12), and Learning Interest.
+   - Slots lacked 12-hour AM/PM formatting toggle.
+   - Missing 1-click Google Calendar / Apple Calendar export on the confirmation view.
+   - `.env` was tracked in git instead of ignored.
+2. **Implementation & Enhancements**:
+   - Created [src/shared/time/timezone-options.ts](file:///d:/Projects/CodeYoung/src/shared/time/timezone-options.ts) with searchable global IANA timezones and regional groupings.
+   - Updated [src/app/page.tsx](file:///d:/Projects/CodeYoung/src/app/page.tsx) with:
+     - Searchable IANA timezone dropdown + quick-access preset buttons.
+     - 14-day interactive date strip.
+     - 12-hour AM/PM vs 24-hour time display switcher.
+     - Rich Parent & Student details form (Parent Name/Email, Student Name, Grade Level, Learning Topic) with real-time field validation.
+     - Double-submission prevention with lock and animated loading indicators.
+     - Conflict auto-recovery (automatically refreshes slot grid on 409/422).
+     - Confirmed booking card with dual-timezone comparison, copy meeting link action, and 1-click Google Calendar & .ics download.
+   - Created [src/shared/calendar/calendar-export.ts](file:///d:/Projects/CodeYoung/src/shared/calendar/calendar-export.ts) with Google Calendar and .ics generators.
+   - Updated [.gitignore](file:///d:/Projects/CodeYoung/.gitignore) to properly ignore `.env`.
+3. **Automated Testing & Verification**:
+   - Added [tests/unit/calendar-export.test.ts](file:///d:/Projects/CodeYoung/tests/unit/calendar-export.test.ts).
+   - Executed ESLint (`eslint .`), TypeScript (`tsc --noEmit`), Vitest suite (15/15 tests passing across 4 files), and Next.js 16 Turbopack production build (`next build`).
+
+### Executed Commands & Actual Verification Results
+
+#### 1. ESLint 9 & TypeScript Validation
+```text
+$ npm run lint
+> eslint .
+(Exit code 0, 0 errors, 0 warnings)
+
+$ npx tsc --noEmit
+(Exit code 0)
+```
+
+#### 2. Vitest Test Suite Execution (`npx vitest run --fileParallelism=false`)
+```text
+ ✓ tests/integration/booking-concurrency.test.ts (3 tests) 498ms
+   ✓ DATABASE EXCLUSION CONSTRAINT: directly rejects overlapping confirmed bookings for the same mentor
+   ✓ HIGH CONCURRENCY RACE CONDITION: 10 parallel booking attempts for 1 slot -> exactly 1 succeeds
+   ✓ DAILY QUOTA ENFORCEMENT: prevents more than 2 confirmed bookings per mentor-local day under concurrent requests
+ ✓ tests/unit/timezone-utils.test.ts (9 tests) 31ms
+   ✓ accepts valid IANA timezones
+   ✓ rejects invalid or non-IANA timezone strings
+   ✓ detects nonexistent spring-forward time in US Eastern (America/New_York 2026-03-08 02:30)
+   ✓ detects nonexistent spring-forward time in UK (Europe/London 2026-03-29 01:30)
+   ✓ detects ambiguous fall-back time in US Eastern (America/New_York 2026-11-01 01:30)
+   ✓ detects ambiguous fall-back time in UK (Europe/London 2026-10-25 01:30)
+   ✓ accepts valid standard times outside transition gaps
+   ✓ correctly calculates mentor-local calendar day when UTC timestamp shifts date
+   ✓ correctly determines day of week in mentor timezone
+ ✓ tests/integration/outbox-resilience.test.ts (2 tests) 216ms
+   ✓ creates outbox records atomically with booking confirmation
+   ✓ outbox worker processes pending messages without affecting confirmed bookings
+ ✓ tests/unit/calendar-export.test.ts (1 test) 3ms
+   ✓ generates a well-formed Google Calendar TEMPLATE URL
+
+ Test Files  4 passed (4)
+      Tests  15 passed (15)
+   Duration  2.73s
+```
+
+#### 3. Next.js 16 Turbopack Production Build
+```text
+$ npm run build
+> next build
+▲ Next.js 16.4.0 (Turbopack)
+✓ Running next.config.mjs took 28ms
+✓ Compiled successfully in 1791ms
+  Finished TypeScript in 3.0s ...
+✓ Generating static pages using 8 workers (3/3) in 1096ms
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /api/bookings
+├ ƒ /api/mentors
+├ ƒ /api/notifications
+└ ƒ /api/slots
+```
+
+---
+
+
 
 
 
