@@ -1,0 +1,98 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// =============================================
+// MODULE: MENTORS
+// =============================================
+model Mentor {
+  id           String              @id @default(uuid())
+  name         String
+  email        String              @unique
+  timezone     String              // IANA standard, e.g. "Asia/Kolkata", "America/New_York"
+  isActive     Boolean             @default(true)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  workingHours MentorWorkingHour[]
+  bookings     Booking[]
+
+  @@index([isActive])
+}
+
+model MentorWorkingHour {
+  id             String   @id @default(uuid())
+  mentorId       String
+  mentor         Mentor   @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+  dayOfWeek      Int      // 0 (Sunday) to 6 (Saturday) in Mentor's Local Timezone
+  startLocalTime String   // "HH:mm" (24h format, e.g. "14:00")
+  endLocalTime   String   // "HH:mm" (24h format, e.g. "20:00")
+
+  @@unique([mentorId, dayOfWeek, startLocalTime, endLocalTime])
+  @@index([mentorId, dayOfWeek])
+}
+
+// =============================================
+// MODULE: BOOKINGS
+// =============================================
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED
+}
+
+model Booking {
+  id               String               @id @default(uuid())
+  mentorId         String
+  mentor           Mentor               @relation(fields: [mentorId], references: [id], onDelete: Restrict)
+  parentName       String
+  parentEmail      String
+  parentTimezone   String               // IANA timezone, e.g. "America/New_York"
+  startTimeUtc     DateTime             // Normalized UTC timestamp
+  endTimeUtc       DateTime             // Normalized UTC timestamp
+  mentorLocalDate  String               // "YYYY-MM-DD" in mentor's timezone
+  meetingLink      String               // Unique dummy meeting link (e.g. https://meet.codeyoung.com/room/uuid)
+  status           BookingStatus        @default(CONFIRMED)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  outboxMessages   NotificationOutbox[]
+
+  @@index([mentorId, startTimeUtc, endTimeUtc])
+  @@index([mentorId, mentorLocalDate, status])
+  @@index([parentEmail])
+}
+
+// =============================================
+// MODULE: NOTIFICATIONS (Transactional Outbox)
+// =============================================
+enum OutboxStatus {
+  PENDING
+  PROCESSING
+  SENT
+  FAILED
+}
+
+model NotificationOutbox {
+  id             String       @id @default(uuid())
+  bookingId      String
+  booking        Booking      @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  recipientType  String       // "PARENT" | "MENTOR"
+  recipientEmail String
+  recipientName  String
+  subject        String
+  contentHtml    String
+  status         OutboxStatus @default(PENDING)
+  retryCount     Int          @default(0)
+  maxRetries     Int          @default(3)
+  lastError      String?
+  scheduledFor   DateTime     @default(now())
+  sentAt         DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([status, scheduledFor])
+  @@index([bookingId])
+}
